@@ -1,4 +1,4 @@
-if getgenv().AimbotRan then return; else getgenv().AimbotRan = true; end
+if getgenv().AimbotRan then return else getgenv().AimbotRan = true end
 
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -26,7 +26,7 @@ local function GetClosestPlayer()
 end
 
 Mouse.KeyDown:Connect(function(key)
-    if key == getgenv().Aimbot.Keybind:lower() then
+    if key == getgenv().Aimbot_Keybind:lower() then
         Player = (not Player and GetClosestPlayer()) or nil
     end
 end)
@@ -35,15 +35,15 @@ RunService.RenderStepped:Connect(function()
     if not Player or not Aimbot.Status then return end
     local Hitpart = Player.Character:FindFirstChild(Aimbot.Hitpart)
     if not Hitpart then return end
-    
+
     -- Proper smoothness scaling: Higher values = slower aim
-    local SmoothFactor = math.clamp(1 - (getgenv().Aimbot.Smoothness / 10), 0.1, 1)
+    local SmoothFactor = math.clamp(1 - (getgenv().Aimbot_Smoothness / 10), 0.1, 1)
     Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Hitpart.Position), SmoothFactor)
-    
-    -- M1 Reset (Optional, only on/off)
-    if Aimbot.M1Reset then
+
+    -- M1 Reset (Only if enabled in M1Reset setting)
+    if getgenv().M1Reset then
         if Mouse.Target then
-            Mouse1Click()
+            Mouse1Click() -- Trigger the M1 reset when target is present
         end
     end
 end)
@@ -131,6 +131,19 @@ local function setupCharacter(character)
 
             game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
         end
+    end
+
+    -- Only trigger M1 Reset if enabled in M1Reset setting
+    if getgenv().M1Reset then
+        userInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                -- M1 Reset logic when enabled
+                if Mouse.Target then
+                    Mouse1Click() -- Trigger the click reset
+                end
+            end
+        end)
     end
 
     userInputService.InputBegan:Connect(onKeyPress)
