@@ -57,7 +57,7 @@ local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
 
 local DASH_DISTANCE = 27.3  -- Backward dash distance
-local DASH_DURATION = 0.13    -- Dash movement duration
+local DASH_DURATION = 0.12    -- Dash movement duration
 local DASH_DELAY = 0.2       -- Delay before dashing
 local isDashOnCooldown = false  -- Cooldown flag
 
