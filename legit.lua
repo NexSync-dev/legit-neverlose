@@ -1,12 +1,62 @@
--- Dash settings
-local DASH_DISTANCE = 27.3  -- Backward dash distance
-local DASH_DURATION = 0.15   -- Dash movement duration
-local DASH_DELAY = 0.2      -- Delay before dashing
-local isDashOnCooldown = false  -- Cooldown flag
+if getgenv().AimbotRan then return; else getgenv().AimbotRan = true; end
 
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+local Player = nil
+
+local function GetClosestPlayer()
+    local ClosestDistance, ClosestPlayer = math.huge, nil
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer and Player.Character and Player.Character:FindFirstChild(Aimbot.Hitpart) then
+            local Root, Visible = Camera:WorldToScreenPoint(Player.Character[Aimbot.Hitpart].Position)
+            if Visible then
+                local Distance = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(Root.X, Root.Y)).Magnitude
+                if Distance < ClosestDistance then
+                    ClosestPlayer = Player
+                    ClosestDistance = Distance
+                end
+            end
+        end
+    end
+    return ClosestPlayer
+end
+
+Mouse.KeyDown:Connect(function(key)
+    if key == getgenv().Aimbot.Keybind:lower() then
+        Player = (not Player and GetClosestPlayer()) or nil
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not Player or not Aimbot.Status then return end
+    local Hitpart = Player.Character:FindFirstChild(Aimbot.Hitpart)
+    if not Hitpart then return end
+    
+    -- Proper smoothness scaling: Higher values = slower aim
+    local SmoothFactor = math.clamp(1 - (getgenv().Aimbot.Smoothness / 10), 0.1, 1)
+    Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Hitpart.Position), SmoothFactor)
+    
+    -- M1 Reset (Optional, only on/off)
+    if Aimbot.M1Reset then
+        if Mouse.Target then
+            Mouse1Click()
+        end
+    end
+end)
+
+-- Dash Configuration
 local player = game.Players.LocalPlayer
 local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
+
+local DASH_DISTANCE = 27.3  -- Backward dash distance
+local DASH_DURATION = 0.2    -- Dash movement duration
+local DASH_DELAY = 0.2       -- Delay before dashing
+local isDashOnCooldown = false  -- Cooldown flag
 
 local function setupCharacter(character)
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
@@ -93,77 +143,3 @@ end
 
 -- Listen for respawn
 player.CharacterAdded:Connect(setupCharacter)
-
--- Aimbot System
-local function aimAtTarget(target)
-    if not target then return end
-    local humanoidRootPart = target:FindFirstChild("HumanoidRootPart")
-    if humanoidRootPart then
-        local characterRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if characterRoot then
-            local newCFrame = CFrame.new(characterRoot.Position, humanoidRootPart.Position)
-            local smoothness = getgenv().AimbotSettings.Smoothness or 0.5
-
-            local aimTween = tweenService:Create(
-                characterRoot,
-                TweenInfo.new(smoothness, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {CFrame = newCFrame}
-            )
-            aimTween:Play()
-        end
-    end
-end
-
-local function findNearestTarget()
-    local closestTarget = nil
-    local shortestDistance = math.huge
-    local characterRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-
-    if not characterRoot then return nil end
-
-    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
-        if otherPlayer ~= player and otherPlayer.Character then
-            local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if otherRoot then
-                local distance = (characterRoot.Position - otherRoot.Position).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    closestTarget = otherPlayer.Character
-                end
-            end
-        end
-    end
-
-    return closestTarget
-end
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().Aimbot then
-        local target = findNearestTarget()
-        aimAtTarget(target)
-    end
-end)
-
--- Aimbot Toggle Keybind
-userInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == getgenv().AimbotKeybind then
-        getgenv().Aimbot = not getgenv().Aimbot  -- Toggle Aimbot
-    end
-end)
-
--- M1 Reset
-if getgenv().M1Reset then
-    game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local args = {
-                [1] = {
-                    ["Reset"] = true,
-                    ["Goal"] = "M1Reset"
-                }
-            }
-            game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
-        end
-    end)
-end
