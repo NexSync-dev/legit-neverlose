@@ -1,3 +1,6 @@
+local NotificationLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/IceMinisterq/Notification-Library/Main/Library.lua"))()
+NotificationLibrary:SendNotification("Info", "This script isnt the best as I work alone and some features may not be up to what you expect", 8)
+
 if getgenv().AimbotRan then return else getgenv().AimbotRan = true end
 
 local RunService = game:GetService("RunService")
